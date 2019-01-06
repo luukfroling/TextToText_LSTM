@@ -4,7 +4,7 @@ A neural network class which will generate a sentence based on the given input u
 
 <h1> documentation </h1> 
 
-<h2> setting variables <h2>
+<h2> setting variables </h2>
 
 To reduce the amount of input nodes, the data needs to be processed before we initialise the network. 
 First, initialise a variable which will hold the training data for the network. 
