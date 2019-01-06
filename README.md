@@ -20,7 +20,7 @@ The amount of nodes in the neural network must be given in array format as a par
 let char_nodes = neuralNetwork.getChars(data).length;
 ```
 
-<h2> onstructor() <h2>
+<h2> Constructor() </h2>
 Now we need to initialise the network. Pass the variables created as parameters. 
   
   ```javascript
