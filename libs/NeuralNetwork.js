@@ -8,16 +8,25 @@
 */
 
 class neuralNetwork {
-  constructor(sizes){
+  constructor(sizes, chars){
+
+    //Quick error handling.
+    if(sizes[0] !== chars.length){
+      console.log("the input nodes do not match with the amount of characters you want to process.");
+      return -1;
+    }
+
     //Structure of the network.
-    this.lr= 1;
+    this.lr= 0.01;
     this.netconfig = sizes;
     this.input = new Matrix(sizes[0]);
-    //this.hidden = new Matrix(sizes[1]);
     this.layers = new Array();
     this.weights = [];
     this.output = new Matrix(sizes[sizes.length - 1]);
 
+    //Save the characters of the text.
+    this.chars = chars.slice();
+    //console.log(this.chars);
     //Output length (quick fix)
     this.ol = sizes[sizes.length - 1];
 
@@ -73,11 +82,10 @@ class neuralNetwork {
     *  Every spot in the array stands for an output.
     */
     this.outputFunctions = [
-      function(d){
-        let abc = "abcdefghijklmnopqrstuvwxyz .";
+      function(d, chars){
         let result;
-        console.log("output = ", d, "-- with letter = " + abc[d]);
-        result =  abc[d];
+        console.log("output = ", d, "-- with letter = " + chars[d]);
+        result =  chars[d];
         return result;
       }
     ];
@@ -182,7 +190,7 @@ class neuralNetwork {
   run(input){
 
     if(typeof input == "string"){
-      input = neuralNetwork.toData(input);
+      input = this.toData(input);
     }
     this.resetTime();
     for(let i = 0; i < input.length; i++){
@@ -193,7 +201,7 @@ class neuralNetwork {
     if(this.outputFunctions != undefined){
       let out = Matrix.toArray(this.output);
       let index = out.indexOf(Math.max.apply(window, out));
-      return this.outputFunctions[0](index);
+      return this.outputFunctions[0](index, this.chars);
     }
     this.output.show();
     return Matrix.toArray(this.output);
@@ -206,6 +214,7 @@ class neuralNetwork {
   */
   train(input, desired){
     this.trainingRun(input);
+
     let error = Matrix.substract(Matrix.fromArray(desired), this.output);
 
     this.error = error;
@@ -349,8 +358,9 @@ class neuralNetwork {
     this.rec.onstart = function() { }
     this.rec.neuralNetwork = this;
     this.rec.onresult = function(event) {
-      this.neuralNetwork.run(event.results[0][0].transcript);
+      let result = this.neuralNetwork.runNetwork(event.results[0][0].transcript);
       console.log(event.results[0][0].transcript);
+      console.log(result);
       this.stop();
     }
     this.rec.onerror = function(event) { }
@@ -386,7 +396,7 @@ class neuralNetwork {
     let input = inp.slice();
     //Input in an array with 2 strings. Get the strings to normal data a LSTM cell can handle.
     for(let i = 0; i < input.length; i++){
-      input[i] = neuralNetwork.toData(input[i]);
+      input[i] = this.toData(input[i]);
     }
     input = neuralNetwork.ctd(input);
 
@@ -408,12 +418,14 @@ class neuralNetwork {
       input += r
       result += r;
       killSwitch++;
-    } while((r != ".") && (killSwitch < 200));
+    } while((r != ".") && (killSwitch < 1000));
 
     return result;
   }
 
+  //create training data
   static ctd(x){
+    //Solve a pointer problem.
     let d = new Array();
     for(let i = 0; i < x.length; i++){
       d.push(x[i].slice());
@@ -421,7 +433,6 @@ class neuralNetwork {
     let result = new Array();
     let subresult = new Array(2);
     let length = d[1].length;
-
     for(let i = 0; i < length; i++){
       subresult[0] = d[0].slice();
       subresult[1] = [d[1][0]].slice();
@@ -429,32 +440,44 @@ class neuralNetwork {
       result.push(subresult);
       subresult = new Array(2);
     }
-    console.log(result);
+
     return result;
   }
 
-  static toData(p){
+  toData(p){
     let t = p.split('');
 
-      //Convert input data to usable data.
-      let abc = 'abcdefghijklmnopqrstuvwxyz .'.split('');
-      let data = new Array(t.length);
-      data.fill(new Array(t.length));
-      for(let i = 0; i < data.length; i++){
-        data[i] = new Array(abc.length);
-        data[i].fill(0);
-      }
+    //Convert input data to usable data.
+    let data = new Array(t.length);
+    data.fill(new Array(t.length));
+    for(let i = 0; i < data.length; i++){
+      data[i] = new Array(this.chars.length);
+      data[i].fill(0);
+    }
 
-      //Change the data
-      for(let i = 0; i < t.length; i++){
-        for(let j = 0; j < abc.length; j++){
-          if(t[i] === abc[j]){
-            data[i][j] = 1;
-            break;
-          }
+    //Change the data
+    for(let i = 0; i < t.length; i++){
+      for(let j = 0; j < this.chars.length; j++){
+        if(t[i] === this.chars[j]){
+          data[i][j] = 1;
+          break;
         }
       }
+    }
     return data;
+  }
+
+  static getChars(input){
+    let result = new Array();
+    for(let i = 0; i < input.length; i++){
+      for(let j = 0; j < input[i].length; j++){
+        if(result.indexOf(input[i].charAt(j)) < 0){
+          result.push(input[i].charAt(j))
+        }
+      }
+    }
+
+    return result
   }
 }
 
